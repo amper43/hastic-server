@@ -21,6 +21,7 @@ export type DBQ = {
   updateMany: (query: string[] | object, updateQuery: any) => Promise<any[]>,
   removeOne: (query: string) => Promise<boolean>
   removeMany: (query: string[] | object) => Promise<number>
+  removeManyNotIn: (analyticId: string, query: string[] | object) => Promise<number>
 }
 
 export function makeDBQ(collection: Collection): DBQ {
@@ -32,7 +33,8 @@ export function makeDBQ(collection: Collection): DBQ {
     updateOne: dbUpdateOne.bind(null, collection),
     updateMany: dbUpdateMany.bind(null, collection),
     removeOne: dbRemoveOne.bind(null, collection),
-    removeMany: dbRemoveMany.bind(null, collection)
+    removeMany: dbRemoveMany.bind(null, collection),
+    removeManyNotIn: dbRemoveManyNotIn.bind(null, collection)
   }
 }
 
@@ -175,11 +177,7 @@ let dbRemoveOne = (collection: Collection, query: string | object) => {
   });
 }
 
-let dbRemoveMany = (collection: Collection, query: string[] | object) => {
-  if(isEmptyArray(query)) {
-    return Promise.resolve([]);
-  }
-  query = wrapIdsToQuery(query);
+let _dbRemover = (collection: Collection, query: string[] | object) => {
   return new Promise<number>((resolve, reject) => {
     db.get(collection).remove(query, { multi: true }, (err, numRemoved) => {
       if(err) {
@@ -189,6 +187,24 @@ let dbRemoveMany = (collection: Collection, query: string[] | object) => {
       }
     });
   });
+}
+
+let dbRemoveMany = (collection: Collection, query: string[] | object) => {
+  if(isEmptyArray(query)) {
+    return Promise.resolve([]);
+  }
+  query = wrapIdsToQuery(query);
+  return _dbRemover(collection, query);
+}
+
+let dbRemoveManyNotIn = (collection: Collection, analyticUnitId: string, idsToSave: string[] | object) => {
+  if(isEmptyArray(idsToSave)) {
+    return Promise.resolve([]);
+  }
+  let query = { _id: { $nin: idsToSave },
+                analyticUnitId: analyticUnitId
+  };
+  return _dbRemover(collection, query);
 }
 
 function maybeCreateDir(path: string): void {

@@ -131,3 +131,7 @@ export async function setSegmentsDeleted(ids: SegmentId[]) {
 export function removeSegments(idsToRemove: SegmentId[]) {
   return db.removeMany(idsToRemove);
 }
+
+export function removeSegmentsNotIn(analyticId: AnalyticUnitId, idsToSave: SegmentId[]) {
+  return db.removeManyNotIn(analyticId, idsToSave);
+}

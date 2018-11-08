@@ -195,8 +195,7 @@ export async function runPredict(id: AnalyticUnit.AnalyticUnitId) {
     //   }
     // }
 
-    await deleteNonpredictedSegments(id, payload);
-
+    deleteNonpredictedSegments(id, payload);
     Segment.insertSegments(payload.segments);
     AnalyticUnitCache.setData(id, payload.cache);
     AnalyticUnit.setPredictionTime(id, payload.lastPredictionTime);
@@ -211,10 +210,7 @@ export async function runPredict(id: AnalyticUnit.AnalyticUnitId) {
 }
 
 export async function deleteNonpredictedSegments(id, payload) {
-  let lastPredictedSegments = await Segment.findMany(id, { labeled: false, deleted: false });
-  let segmentsToRemove: Segment.Segment[];
-  segmentsToRemove = _.differenceWith(lastPredictedSegments, payload.segments, (a, b: Segment.Segment) => a.equals(b));
-  Segment.removeSegments(segmentsToRemove.map(s => s.id));
+  Segment.removeSegmentsNotIn(id, payload.segments.map(s => s.id));
 }
 
 function processPredictionResult(analyticUnitId: AnalyticUnit.AnalyticUnitId, taskResult: any): {
